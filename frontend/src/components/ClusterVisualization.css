@@ -1,0 +1,247 @@
+.cluster-visualization {
+  margin-top: 2rem;
+}
+
+.cluster-stats {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.stat-card {
+  flex: 1;
+  min-width: 150px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  opacity: 0.9;
+  margin-bottom: 0.5rem;
+}
+
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.scatter-plot {
+  background: #f8f9fa;
+  padding: 2rem;
+  border-radius: 10px;
+  margin-bottom: 2rem;
+}
+
+.scatter-plot h4 {
+  font-size: 1.2rem;
+  color: #2c3e50;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.plot-legend {
+  text-align: center;
+  margin-top: 1rem;
+  color: #7f8c8d;
+  font-size: 0.9rem;
+}
+
+.plot-legend p {
+  margin: 0.25rem 0;
+}
+
+.custom-tooltip {
+  background: white;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  max-width: 300px;
+}
+
+.tooltip-title {
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.tooltip-text {
+  color: #5a6c7d;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.custom-tooltip p {
+  margin: 0.25rem 0;
+  font-size: 0.85rem;
+  color: #7f8c8d;
+}
+
+.cluster-table-section {
+  margin-top: 2rem;
+}
+
+.cluster-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin-top: 1rem;
+}
+
+.cluster-table thead {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.cluster-table th {
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.cluster-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.cluster-table tbody tr:hover {
+  background: #f8f9fa;
+}
+
+.cluster-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.cluster-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.sentiment-score {
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+}
+
+.sentiment-score.positive {
+  background: #d4edda;
+  color: #155724;
+}
+
+.sentiment-score.negative {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.sentiment-score.neutral {
+  background: #e2e3e5;
+  color: #383d41;
+}
+
+.emotion-tag {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: #e8f4f8;
+  color: #2c3e50;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  text-transform: capitalize;
+}
+
+.label-tag {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: #fff3cd;
+  color: #856404;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  border: 1px solid #ffeaa7;
+}
+
+.label-descriptions {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+}
+
+.label-descriptions h5 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.label-descriptions ul {
+  list-style: none;
+  padding: 0;
+}
+
+.label-descriptions li {
+  margin-bottom: 0.75rem;
+  color: #5a6c7d;
+  font-size: 0.95rem;
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.label-descriptions li:before {
+  content: "•";
+  color: #667eea;
+  font-weight: bold;
+  position: absolute;
+  left: 0;
+  font-size: 1.2rem;
+}
+
+.label-descriptions strong {
+  color: #2c3e50;
+}
+
+@media (max-width: 768px) {
+  .cluster-stats {
+    flex-direction: column;
+  }
+
+  .stat-card {
+    min-width: 100%;
+  }
+
+  .scatter-plot {
+    padding: 1rem;
+  }
+
+  .cluster-table {
+    font-size: 0.85rem;
+  }
+
+  .cluster-table th,
+  .cluster-table td {
+    padding: 0.75rem;
+  }
+
+  /* Make table scrollable on mobile */
+  .cluster-table-section {
+    overflow-x: auto;
+  }
+}
