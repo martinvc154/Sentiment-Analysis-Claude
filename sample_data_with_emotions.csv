@@ -1,0 +1,25 @@
+Organization,Question,Sentiment,emotion_joy,emotion_sadness,emotion_anger,emotion_fear,emotion_surprise,emotion_disgust,divergence
+Acme Corp,How satisfied are you with our product?,-0.2,0.1,0.4,0.3,0.2,0.0,0.1,0.5
+Acme Corp,Would you recommend us to others?,0.5,0.6,0.1,0.1,0.1,0.1,0.0,0.2
+Acme Corp,How do you rate our customer service?,0.7,0.8,0.0,0.0,0.1,0.1,0.0,0.1
+Acme Corp,Is our pricing fair?,-0.4,0.1,0.5,0.4,0.0,0.0,0.2,0.6
+Beta Inc,How satisfied are you with our product?,0.8,0.9,0.0,0.0,0.0,0.1,0.0,0.1
+Beta Inc,Would you recommend us to others?,0.9,0.95,0.0,0.0,0.0,0.05,0.0,0.05
+Beta Inc,How do you rate our customer service?,0.6,0.7,0.1,0.1,0.0,0.1,0.0,0.2
+Beta Inc,Is our pricing fair?,0.3,0.5,0.2,0.1,0.1,0.1,0.0,0.3
+Gamma LLC,How satisfied are you with our product?,-0.6,0.0,0.6,0.5,0.1,0.0,0.3,0.8
+Gamma LLC,Would you recommend us to others?,-0.8,0.0,0.7,0.6,0.2,0.0,0.4,0.9
+Gamma LLC,How do you rate our customer service?,-0.3,0.2,0.5,0.4,0.1,0.0,0.2,0.6
+Gamma LLC,Is our pricing fair?,-0.5,0.1,0.6,0.5,0.2,0.0,0.3,0.7
+Delta Systems,How satisfied are you with our product?,0.4,0.5,0.2,0.1,0.1,0.1,0.0,0.3
+Delta Systems,Would you recommend us to others?,0.2,0.4,0.3,0.2,0.1,0.0,0.1,0.4
+Delta Systems,How do you rate our customer service?,0.5,0.6,0.1,0.1,0.1,0.1,0.0,0.2
+Delta Systems,Is our pricing fair?,0.1,0.3,0.3,0.2,0.1,0.1,0.1,0.4
+Epsilon Partners,How satisfied are you with our product?,0.9,0.95,0.0,0.0,0.0,0.05,0.0,0.05
+Epsilon Partners,Would you recommend us to others?,0.8,0.9,0.0,0.0,0.0,0.1,0.0,0.1
+Epsilon Partners,How do you rate our customer service?,0.7,0.8,0.1,0.0,0.0,0.1,0.0,0.15
+Epsilon Partners,Is our pricing fair?,0.6,0.7,0.2,0.0,0.1,0.0,0.0,0.2
+Zeta Ventures,How satisfied are you with our product?,-0.1,0.3,0.4,0.2,0.1,0.0,0.1,0.5
+Zeta Ventures,Would you recommend us to others?,0.0,0.4,0.3,0.2,0.1,0.0,0.1,0.4
+Zeta Ventures,How do you rate our customer service?,0.2,0.5,0.2,0.1,0.1,0.1,0.0,0.3
+Zeta Ventures,Is our pricing fair?,-0.3,0.2,0.5,0.3,0.2,0.0,0.2,0.6

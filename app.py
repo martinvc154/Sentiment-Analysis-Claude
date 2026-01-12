@@ -5,11 +5,18 @@ import plotly.graph_objects as go
 import plotly.figure_factory as ff
 from scipy.cluster import hierarchy
 from scipy.spatial.distance import pdist
+from scipy import stats
 import matplotlib.pyplot as plt
 import matplotlib
 import seaborn as sns
 import os
 from io import BytesIO
+from docx import Document
+from docx.shared import Inches, Pt, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+import zipfile
+import tempfile
+import shutil
 
 # Set page configuration
 st.set_page_config(
@@ -36,7 +43,7 @@ if not os.path.exists('exports'):
 st.title("📊 Sentiment Analysis Dashboard")
 
 # Create tabs
-tab1, tab2, tab3 = st.tabs(["📁 Data Upload", "🔗 Column Mapping", "📈 Visualizations"])
+tab1, tab2, tab3, tab4 = st.tabs(["📁 Data Upload", "🔗 Column Mapping", "📈 Visualizations", "📊 Export"])
 
 # TAB 1: Data Upload
 with tab1:
@@ -519,6 +526,489 @@ with tab3:
         elif chart_type == "Clusters":
             st.info("🔍 Clusters visualization coming soon!")
             st.markdown("This will show clustering analysis of sentiment patterns.")
+
+# TAB 4: Export
+with tab4:
+    st.header("Export Statistics and Data")
+
+    if st.session_state.data is None:
+        st.warning("⚠️ Please upload data in the 'Data Upload' tab first.")
+    else:
+        df = st.session_state.data
+
+        # Helper function to calculate descriptive statistics with confidence intervals
+        def calculate_descriptive_stats(df, columns):
+            """Calculate descriptive statistics with 95% confidence intervals"""
+            stats_data = []
+
+            for col in columns:
+                if col in df.columns:
+                    data = df[col].dropna()
+                    if len(data) > 0:
+                        n = len(data)
+                        mean = data.mean()
+                        std = data.std()
+                        min_val = data.min()
+                        max_val = data.max()
+
+                        # Calculate 95% confidence interval
+                        if n > 1:
+                            se = std / np.sqrt(n)
+                            ci = stats.t.interval(0.95, n-1, loc=mean, scale=se)
+                            ci_str = f"[{ci[0]:.3f}, {ci[1]:.3f}]"
+                        else:
+                            ci_str = "N/A"
+
+                        stats_data.append({
+                            'Variable': col,
+                            'N': n,
+                            'Mean': f"{mean:.3f}",
+                            'SD': f"{std:.3f}",
+                            'Min': f"{min_val:.3f}",
+                            'Max': f"{max_val:.3f}",
+                            '95% CI': ci_str
+                        })
+
+            return pd.DataFrame(stats_data)
+
+        # Helper function to calculate organization summary
+        def calculate_org_summary(df, org_col, sent_col):
+            """Calculate organization-level summary statistics"""
+            summary_data = []
+
+            # Detect emotion columns
+            emotion_cols = [col for col in df.columns if any(emotion in col.lower()
+                           for emotion in ['joy', 'sadness', 'anger', 'fear', 'surprise', 'disgust'])]
+
+            # Detect divergence column
+            div_col = None
+            for col in df.columns:
+                if 'divergence' in col.lower():
+                    div_col = col
+                    break
+
+            for org in df[org_col].unique():
+                org_data = df[df[org_col] == org]
+                n = len(org_data)
+
+                # Sentiment statistics
+                sent_mean = org_data[sent_col].mean()
+                sent_std = org_data[sent_col].std()
+
+                # Divergence statistics (if available)
+                if div_col and div_col in df.columns:
+                    div_mean = org_data[div_col].mean()
+                    div_std = org_data[div_col].std()
+                    div_str = f"{div_mean:.3f} ({div_std:.3f})"
+                else:
+                    div_str = "N/A"
+
+                # Dominant emotion (if emotions available)
+                if emotion_cols:
+                    emotion_means = {col: org_data[col].mean() for col in emotion_cols if col in org_data.columns}
+                    if emotion_means:
+                        dominant = max(emotion_means, key=emotion_means.get)
+                        # Clean up column name to get emotion name
+                        dominant_emotion = dominant.replace('emotion_', '').replace('_', ' ').title()
+                    else:
+                        dominant_emotion = "N/A"
+                else:
+                    dominant_emotion = "N/A"
+
+                summary_data.append({
+                    'Organization': org,
+                    'N': n,
+                    'Sentiment M(SD)': f"{sent_mean:.3f} ({sent_std:.3f})",
+                    'Divergence M(SD)': div_str,
+                    'Dominant Emotion': dominant_emotion
+                })
+
+            return pd.DataFrame(summary_data)
+
+        # Helper function to create LaTeX table
+        def create_latex_table(df, caption, label):
+            """Generate LaTeX table with booktabs style"""
+            latex = "\\begin{table}[htbp]\n"
+            latex += "\\centering\n"
+            latex += f"\\caption{{{caption}}}\n"
+            latex += f"\\label{{{label}}}\n"
+
+            # Column alignment
+            n_cols = len(df.columns)
+            alignment = "l" + "c" * (n_cols - 1)
+            latex += f"\\begin{{tabular}}{{{alignment}}}\n"
+            latex += "\\toprule\n"
+
+            # Header
+            latex += " & ".join(df.columns) + " \\\\\n"
+            latex += "\\midrule\n"
+
+            # Rows
+            for _, row in df.iterrows():
+                latex += " & ".join(str(val) for val in row.values) + " \\\\\n"
+
+            latex += "\\bottomrule\n"
+            latex += "\\end{tabular}\n"
+            latex += "\\end{table}\n"
+
+            return latex
+
+        # Helper function to create Word document with tables
+        def create_word_document(desc_stats_df, org_summary_df=None):
+            """Create a Word document with formatted tables"""
+            doc = Document()
+
+            # Title
+            title = doc.add_heading('Sentiment Analysis Statistics', 0)
+            title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+            # Section 1: Descriptive Statistics
+            doc.add_heading('Descriptive Statistics', level=1)
+
+            # Add table
+            table = doc.add_table(rows=len(desc_stats_df) + 1, cols=len(desc_stats_df.columns))
+            table.style = 'Light Grid Accent 1'
+
+            # Header row
+            hdr_cells = table.rows[0].cells
+            for i, col_name in enumerate(desc_stats_df.columns):
+                hdr_cells[i].text = col_name
+                # Make header bold
+                for paragraph in hdr_cells[i].paragraphs:
+                    for run in paragraph.runs:
+                        run.font.bold = True
+
+            # Data rows
+            for i, row in desc_stats_df.iterrows():
+                row_cells = table.rows[i + 1].cells
+                for j, val in enumerate(row.values):
+                    row_cells[j].text = str(val)
+
+            # Add note
+            note = doc.add_paragraph()
+            note.add_run('Note: ').bold = True
+            note.add_run('CI = confidence interval')
+
+            # Section 2: Organization Summary (if available)
+            if org_summary_df is not None and not org_summary_df.empty:
+                doc.add_page_break()
+                doc.add_heading('Organization Summary', level=1)
+
+                # Add table
+                table2 = doc.add_table(rows=len(org_summary_df) + 1, cols=len(org_summary_df.columns))
+                table2.style = 'Light Grid Accent 1'
+
+                # Header row
+                hdr_cells = table2.rows[0].cells
+                for i, col_name in enumerate(org_summary_df.columns):
+                    hdr_cells[i].text = col_name
+                    for paragraph in hdr_cells[i].paragraphs:
+                        for run in paragraph.runs:
+                            run.font.bold = True
+
+                # Data rows
+                for i, row in org_summary_df.iterrows():
+                    row_cells = table2.rows[i + 1].cells
+                    for j, val in enumerate(row.values):
+                        row_cells[j].text = str(val)
+
+            return doc
+
+        # SECTION 1: DESCRIPTIVE STATISTICS
+        st.subheader("Section 1: Descriptive Statistics")
+
+        # Identify columns for statistics
+        stats_columns = []
+
+        # Add sentiment column if mapped
+        if st.session_state.sentiment_column:
+            stats_columns.append(st.session_state.sentiment_column)
+
+        # Look for divergence column
+        for col in df.columns:
+            if 'divergence' in col.lower():
+                stats_columns.append(col)
+                break
+
+        # Look for emotion columns
+        emotion_names = ['joy', 'sadness', 'anger', 'fear', 'surprise', 'disgust']
+        for emotion in emotion_names:
+            for col in df.columns:
+                if emotion in col.lower():
+                    stats_columns.append(col)
+                    break
+
+        if stats_columns:
+            desc_stats_df = calculate_descriptive_stats(df, stats_columns)
+
+            # Style the dataframe with alternating row colors
+            def style_dataframe(df):
+                styles = []
+                for i in range(len(df)):
+                    if i % 2 == 0:
+                        styles.append(['background-color: #f0f2f6'] * len(df.columns))
+                    else:
+                        styles.append(['background-color: white'] * len(df.columns))
+                return styles
+
+            # Display the table
+            st.dataframe(
+                desc_stats_df,
+                use_container_width=True,
+                hide_index=True
+            )
+
+            st.caption("*Note: CI = confidence interval*")
+
+            # Store for export
+            st.session_state.desc_stats_df = desc_stats_df
+        else:
+            st.info("No statistical columns found. Please ensure your data contains sentiment scores and/or emotion columns.")
+            st.session_state.desc_stats_df = None
+
+        # SECTION 2: ORGANIZATION SUMMARY
+        st.divider()
+        st.subheader("Section 2: Organization Summary")
+
+        if st.session_state.org_column and st.session_state.sentiment_column:
+            org_summary_df = calculate_org_summary(
+                df,
+                st.session_state.org_column,
+                st.session_state.sentiment_column
+            )
+
+            # Display the table
+            st.dataframe(
+                org_summary_df,
+                use_container_width=True,
+                hide_index=True
+            )
+
+            # Store for export
+            st.session_state.org_summary_df = org_summary_df
+        else:
+            st.info("Organization and sentiment columns must be mapped to display this summary. Please go to the 'Column Mapping' tab.")
+            st.session_state.org_summary_df = None
+
+        # SECTION 3: DOWNLOAD BUTTONS
+        st.divider()
+        st.subheader("Section 3: Download Options")
+
+        col1, col2, col3, col4, col5 = st.columns(5)
+
+        # Download Results CSV
+        with col1:
+            csv_buffer = BytesIO()
+            df.to_csv(csv_buffer, index=False)
+            csv_buffer.seek(0)
+
+            st.download_button(
+                label="📥 Download Results CSV",
+                data=csv_buffer,
+                file_name="sentiment_results.csv",
+                mime="text/csv",
+                use_container_width=True,
+                help="Download the complete results dataframe"
+            )
+
+        # Download LaTeX Tables
+        with col2:
+            if st.session_state.get('desc_stats_df') is not None:
+                latex_content = "% LaTeX Tables for Sentiment Analysis\n"
+                latex_content += "% Requires \\usepackage{booktabs}\n\n"
+
+                # Add descriptive statistics table
+                latex_content += create_latex_table(
+                    st.session_state.desc_stats_df,
+                    "Descriptive Statistics",
+                    "tab:descriptive_stats"
+                )
+                latex_content += "\n\n"
+
+                # Add organization summary table if available
+                if st.session_state.get('org_summary_df') is not None:
+                    latex_content += create_latex_table(
+                        st.session_state.org_summary_df,
+                        "Organization Summary",
+                        "tab:org_summary"
+                    )
+
+                st.download_button(
+                    label="📄 Download Tables (LaTeX)",
+                    data=latex_content,
+                    file_name="tables.tex",
+                    mime="text/plain",
+                    use_container_width=True,
+                    help="Download formatted LaTeX tables"
+                )
+            else:
+                st.button(
+                    label="📄 Download Tables (LaTeX)",
+                    disabled=True,
+                    use_container_width=True,
+                    help="No statistics available"
+                )
+
+        # Download Word Tables
+        with col3:
+            if st.session_state.get('desc_stats_df') is not None:
+                word_buffer = BytesIO()
+                doc = create_word_document(
+                    st.session_state.desc_stats_df,
+                    st.session_state.get('org_summary_df')
+                )
+                doc.save(word_buffer)
+                word_buffer.seek(0)
+
+                st.download_button(
+                    label="📝 Download Tables (Word)",
+                    data=word_buffer,
+                    file_name="tables.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    use_container_width=True,
+                    help="Download formatted Word document with tables"
+                )
+            else:
+                st.button(
+                    label="📝 Download Tables (Word)",
+                    disabled=True,
+                    use_container_width=True,
+                    help="No statistics available"
+                )
+
+        # Download All Figures (ZIP)
+        with col4:
+            if st.button("🖼️ Download All Figures (ZIP)", use_container_width=True, help="Download all visualizations as PDFs"):
+                with st.spinner("Creating ZIP file..."):
+                    try:
+                        # Create temporary directory
+                        with tempfile.TemporaryDirectory() as temp_dir:
+                            zip_path = os.path.join(temp_dir, "figures.zip")
+
+                            with zipfile.ZipFile(zip_path, 'w') as zipf:
+                                # Check for existing exports
+                                exports_dir = 'exports'
+                                if os.path.exists(exports_dir):
+                                    for file in os.listdir(exports_dir):
+                                        if file.endswith(('.pdf', '.png')):
+                                            file_path = os.path.join(exports_dir, file)
+                                            zipf.write(file_path, arcname=file)
+
+                                # If heatmap data exists, generate and add it
+                                if st.session_state.get('heatmap_data') is not None:
+                                    # Generate heatmap if not already exported
+                                    heatmap_path = os.path.join(exports_dir, 'sentiment_heatmap.pdf')
+                                    if not os.path.exists(heatmap_path):
+                                        from app import create_publication_heatmap
+                                        fig = create_publication_heatmap(
+                                            st.session_state.heatmap_data,
+                                            st.session_state.get('row_linkage'),
+                                            st.session_state.get('col_linkage'),
+                                            (10, 7),
+                                            300
+                                        )
+                                        fig.savefig(heatmap_path, format='pdf', bbox_inches='tight', dpi=300)
+                                        plt.close(fig)
+                                        zipf.write(heatmap_path, arcname='sentiment_heatmap.pdf')
+
+                            # Read the zip file
+                            with open(zip_path, 'rb') as f:
+                                zip_data = f.read()
+
+                            st.download_button(
+                                label="⬇️ Download ZIP",
+                                data=zip_data,
+                                file_name="all_figures.zip",
+                                mime="application/zip",
+                                use_container_width=True
+                            )
+                            st.success("✅ ZIP file created successfully!")
+                    except Exception as e:
+                        st.error(f"❌ Error creating ZIP file: {str(e)}")
+
+        # Download Replication Package (ZIP)
+        with col5:
+            if st.button("📦 Download Replication Package", use_container_width=True, help="Download data + figures + methodology notes"):
+                with st.spinner("Creating replication package..."):
+                    try:
+                        # Create temporary directory
+                        with tempfile.TemporaryDirectory() as temp_dir:
+                            zip_path = os.path.join(temp_dir, "replication_package.zip")
+
+                            with zipfile.ZipFile(zip_path, 'w') as zipf:
+                                # Add data
+                                data_path = os.path.join(temp_dir, 'data.csv')
+                                df.to_csv(data_path, index=False)
+                                zipf.write(data_path, arcname='data/results.csv')
+
+                                # Add statistics tables
+                                if st.session_state.get('desc_stats_df') is not None:
+                                    stats_path = os.path.join(temp_dir, 'descriptive_statistics.csv')
+                                    st.session_state.desc_stats_df.to_csv(stats_path, index=False)
+                                    zipf.write(stats_path, arcname='tables/descriptive_statistics.csv')
+
+                                if st.session_state.get('org_summary_df') is not None:
+                                    org_path = os.path.join(temp_dir, 'organization_summary.csv')
+                                    st.session_state.org_summary_df.to_csv(org_path, index=False)
+                                    zipf.write(org_path, arcname='tables/organization_summary.csv')
+
+                                # Add figures from exports directory
+                                exports_dir = 'exports'
+                                if os.path.exists(exports_dir):
+                                    for file in os.listdir(exports_dir):
+                                        if file.endswith(('.pdf', '.png')):
+                                            file_path = os.path.join(exports_dir, file)
+                                            zipf.write(file_path, arcname=f'figures/{file}')
+
+                                # Add methodology notes
+                                methodology = """SENTIMENT ANALYSIS REPLICATION PACKAGE
+========================================
+
+Contents:
+---------
+1. data/results.csv - Complete sentiment analysis results
+2. tables/ - Statistical tables (descriptive statistics and organization summaries)
+3. figures/ - All visualizations in PDF/PNG format
+
+Methodology Notes:
+------------------
+- Sentiment scores range from -1 (negative) to +1 (positive)
+- Divergence scores measure the mismatch between sentiment and emotional content
+- Emotion scores are normalized to range [0, 1]
+- 95% confidence intervals calculated using t-distribution
+- Hierarchical clustering performed using Ward's method with Euclidean distance
+
+Column Mapping:
+---------------
+"""
+                                if st.session_state.org_column:
+                                    methodology += f"- Organization: {st.session_state.org_column}\n"
+                                if st.session_state.question_column:
+                                    methodology += f"- Question: {st.session_state.question_column}\n"
+                                if st.session_state.sentiment_column:
+                                    methodology += f"- Sentiment: {st.session_state.sentiment_column}\n"
+
+                                methodology += "\nGenerated by Sentiment Analysis Dashboard\n"
+
+                                methodology_path = os.path.join(temp_dir, 'README.txt')
+                                with open(methodology_path, 'w') as f:
+                                    f.write(methodology)
+                                zipf.write(methodology_path, arcname='README.txt')
+
+                            # Read the zip file
+                            with open(zip_path, 'rb') as f:
+                                zip_data = f.read()
+
+                            st.download_button(
+                                label="⬇️ Download Package",
+                                data=zip_data,
+                                file_name="replication_package.zip",
+                                mime="application/zip",
+                                use_container_width=True
+                            )
+                            st.success("✅ Replication package created successfully!")
+                    except Exception as e:
+                        st.error(f"❌ Error creating replication package: {str(e)}")
 
 # Footer
 st.divider()
