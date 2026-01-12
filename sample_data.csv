@@ -1,0 +1,25 @@
+Organization,Question,Sentiment
+Acme Corp,How satisfied are you with our product?,-0.2
+Acme Corp,Would you recommend us to others?,0.5
+Acme Corp,How do you rate our customer service?,0.7
+Acme Corp,Is our pricing fair?,-0.4
+Beta Inc,How satisfied are you with our product?,0.8
+Beta Inc,Would you recommend us to others?,0.9
+Beta Inc,How do you rate our customer service?,0.6
+Beta Inc,Is our pricing fair?,0.3
+Gamma LLC,How satisfied are you with our product?,-0.6
+Gamma LLC,Would you recommend us to others?,-0.8
+Gamma LLC,How do you rate our customer service?,-0.3
+Gamma LLC,Is our pricing fair?,-0.5
+Delta Systems,How satisfied are you with our product?,0.4
+Delta Systems,Would you recommend us to others?,0.2
+Delta Systems,How do you rate our customer service?,0.5
+Delta Systems,Is our pricing fair?,0.1
+Epsilon Partners,How satisfied are you with our product?,0.9
+Epsilon Partners,Would you recommend us to others?,0.8
+Epsilon Partners,How do you rate our customer service?,0.7
+Epsilon Partners,Is our pricing fair?,0.6
+Zeta Ventures,How satisfied are you with our product?,-0.1
+Zeta Ventures,Would you recommend us to others?,0.0
+Zeta Ventures,How do you rate our customer service?,0.2
+Zeta Ventures,Is our pricing fair?,-0.3
