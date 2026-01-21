@@ -1,6 +1,6 @@
 # RoBert - Sentiment Analysis Tool
 
-A powerful sentiment analysis application built with Streamlit and powered by Anthropic's Claude AI. Analyze text sentiment with detailed insights including confidence scores, emotions, and reasoning.
+
 
 ## Features
 
